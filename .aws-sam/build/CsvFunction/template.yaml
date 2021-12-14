@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Image resizing service
+ 
+Resources:
+  SourceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: source-csv-bucket-1111
+      VersioningConfiguration:
+        Status: Enabled
+  DestinationBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: destination-csv-bucket-1111
+         
+  CsvFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/index.CsvHandler
+      Runtime: nodejs14.x
+      MemorySize: 1024
+      Policies:
+      - S3ReadPolicy:
+          BucketName: source-csv-bucket-1111
+      - S3CrudPolicy:
+          BucketName: destination-csv-bucket-1111
+      Environment:
+        Variables:
+          DESTINATION_BUCKETNAME: destination-csv-bucket-1111
+          SOURCE_BUCKETNAME: source-csv-bucket-1111
+      Events:
+        FileUpload:
+          Type: S3
+          Properties:
+            Bucket:
+              Ref: SourceBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                - Name: suffix
+                  Value: .csv
+Outputs:
+  FunctionArn:
+    Value:
+      Ref: CsvFunction
+    Description: CsvFunction function  Arn

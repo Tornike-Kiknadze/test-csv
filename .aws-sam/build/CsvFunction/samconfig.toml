@@ -1,0 +1,12 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "test-csv"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1q9sd113m3erl"
+s3_prefix = "test-csv"
+region = "us-east-1"
+profile = "test-epam"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = []
