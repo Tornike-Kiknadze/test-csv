@@ -5,15 +5,10 @@ const aws = require('aws-sdk');
 const s3 = new aws.S3({ apiVersion: '2006-03-01' });
 
 exports.CsvHandler = async (event, context) => {
-    //console.log('Received event:', JSON.stringify(event, null, 2));
+   
 
-    // Get the object from the event and show its content type
-    
-    console.log('log_________________');
-    console.log(event.Records[0].s3.object.key);
-     
     const bucket = event.Records[0].s3.bucket.name;
-    console.log(bucket);
+ 
     const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
     const params = {
         Bucket: bucket,
@@ -22,13 +17,41 @@ exports.CsvHandler = async (event, context) => {
 
     
     try {
-        const stream = await s3.getObject(params).createReadStream();
-        const uploadParams = {
-            Bucket: process.env.DESTINATION_BUCKETNAME,
-            Key: key,
-            Body: stream
+        const data = await s3.getObject(params).promise();
+      
+        
+        const ArrayWithCsvRows = data.Body.toString('utf-8').split('\n')
+        
+        let outputScvArrayFirstColumn = '';
+        let outputScvArraySecondColumn = '';
+        
+        for(const row of ArrayWithCsvRows) {
+        const [col1, col2] = row.split(", ")
+        outputScvArrayFirstColumn += `${col1}\n`;
+        outputScvArraySecondColumn += `${col2}\n`
         }
-        await s3.upload(uploadParams).promise()
+        
+        
+        const [fileName] = key.split('.')
+        
+        const uploadParams1 = {
+            Bucket: process.env.DESTINATION_BUCKETNAME,
+            Key: `${fileName}-1.csv`,
+            Body: Buffer.from(outputScvArrayFirstColumn)
+        }
+        
+        const uploadParams2 = {
+            Bucket: process.env.DESTINATION_BUCKETNAME,
+            Key: `${fileName}-2.csv`,
+            Body: Buffer.from(outputScvArraySecondColumn)
+        }
+        
+        await Promise.all([
+            s3.upload(uploadParams1).promise(),
+            s3.upload(uploadParams2).promise()
+        ])
+         
+        
         console.log('Done Uploading CSV File')
         return 'Upload Successful'
     } catch (err) {
